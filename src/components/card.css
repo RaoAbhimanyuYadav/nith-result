@@ -1,0 +1,17 @@
+.card{
+    display: inline-block;
+    
+    width: 200px;
+    padding: 20px;
+    background-color: rgb(223, 223, 221);
+    margin: 20px;
+}
+.clg-rank{
+    font-size: 30px;
+}
+.name{
+    font-size: 20px;
+}
+.roll-no{
+    font-size: 15px;
+}
