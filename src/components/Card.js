@@ -3,7 +3,7 @@ import "./card.css";
 
 const Card = ({ student }) => {
   return (
-    <Link to={"detail/" + student.roll}>
+    <Link to={"detail/" + student.roll} style={{ textDecoration: "none", color: "black", cursor: "pointer" }}>
       <div className="card">
         <div className="clg-rank">#_{student.rank.college.cgpi}</div>
         <div className="name">{student.name}</div>

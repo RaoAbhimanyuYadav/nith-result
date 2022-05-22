@@ -1,0 +1,69 @@
+.header{
+    margin: 30px;
+    font-size: 30px;
+    display: flex;
+    justify-content: space-around;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    background-color: #eefbff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 1300px;
+}
+.rank{
+    font-size: 25px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+
+
+.sem{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.semester{
+    flex-wrap: wrap;
+    margin: 20px;
+    border: 2px solid rgb(183, 208, 255);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 10px 10px 5px #eefbff;
+    width: 400px;
+    font-size: 15px;
+    height: 100%;
+    background-color: rgb(232, 242, 255);
+}
+.semester h3{
+    text-align: center;
+    margin-bottom: 3px;
+}
+.subject{
+    background-color: rgb(217, 243, 249);
+    color: rgb(77, 77, 105);
+    margin: 10px;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 5px;
+    padding: 5px;
+    text-align: center;
+}
+.sub-name{
+    width: 170px;
+}
+/* .sub-code{
+    width: 60px;
+} */
+.subject-default{
+    background-color: rgb(217, 243, 249);
+    font-weight: 520;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    margin: 10px;
+}
+.sg-cgpi{
+    justify-content: space-evenly;
+}
