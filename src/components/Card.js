@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import "./card.css";
 
-const Card = ({ student }) => {
+const Card = ({ student, count }) => {
   return (
-    <Link to={"detail/" + student.roll} style={{ textDecoration: "none", color: "black", cursor: "pointer" }}>
-      <div className="card">
-        <div className="clg-rank">#_{student.rank.college.cgpi}</div>
+    <div className="card">
+      <Link to={"detail/" + student.roll} style={{ textDecoration: "none", color: "black", cursor: "pointer" }}>
+        <div className="clg-rank">#_{count}</div>
         <div className="name">{student.name}</div>
         <div className="roll-no">
           {student.roll} <span className="branch">{student.branch}</span>
@@ -14,8 +14,8 @@ const Card = ({ student }) => {
           <span className="sgpi">{student.sgpi}</span>
           {student.cgpi}
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 };
 

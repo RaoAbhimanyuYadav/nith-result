@@ -30,7 +30,7 @@
     box-shadow: 10px 10px 5px #eefbff;
     width: 400px;
     font-size: 15px;
-    height: 100%;
+    height: 600px;
     background-color: rgb(232, 242, 255);
 }
 .semester h3{
@@ -66,4 +66,5 @@
 }
 .sg-cgpi{
     justify-content: space-evenly;
+    background-color: #b8ffdc;
 }
