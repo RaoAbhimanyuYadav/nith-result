@@ -1,15 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { NITH_BASE_API_URL, NITH_LAST_UPDATED_API } from "../const";
 import Card from "../components/Card";
+import "./home.css";
 import InfiniteScroll from "react-infinite-scroll-component";
+
 const Home = () => {
+  let p = "";
+  let _data = [];
+  const fetchAllData = async () => {
+    do {
+      const url = NITH_BASE_API_URL + `student?limit=3000&sort_by_cgpi=true&next_cursor=${p}`;
+      let data = await fetch(url);
+      let parsedData = await data.json();
+
+      _data = _data.concat(parsedData.data);
+      p = parsedData.pagination.next_cursor;
+    } while (p != "");
+    localStorage.setItem("stData", JSON.stringify(_data));
+  };
+
   const [studentData, setStudentData] = useState([]);
+  const [filteredStudentData, setFilteredStudentData] = useState(studentData);
   const [pagination, setPagination] = useState("");
   const [branch, setBranch] = useState("");
   const [urlExt, setUrlExt] = useState("");
   const [branchList, setBranchList] = useState([]);
   const [years, setYears] = useState([]);
   const [yearLoadind, setYearLoadind] = useState(false);
+  const [ranking, setRanking] = useState({ college: true, class: false, year: false });
   const fetchBranches = async () => {
     const url = NITH_BASE_API_URL + "branches";
     let data = await fetch(url);
@@ -20,14 +38,16 @@ const Home = () => {
     const url = NITH_BASE_API_URL + `student?limit=300&sort_by_cgpi=true${url1}`;
     let data = await fetch(url);
     let parsedData = await data.json();
-
     let dataObject = parsedData;
     setStudentData(dataObject.data);
     setPagination(dataObject.pagination.next_cursor);
+    setFilteredStudentData(dataObject.data);
   };
   useEffect(() => {
     fetchBranches();
-    updateData(""); // eslint-disable-next-line
+    updateData("");
+    fetchAllData();
+    // eslint-disable-next-line
   }, []);
   const fetchMoreData = async () => {
     const url = NITH_BASE_API_URL + `student?limit=300&sort_by_cgpi=true${urlExt}&next_cursor=${pagination}`;
@@ -42,6 +62,7 @@ const Home = () => {
       setUrlExt(``);
       setBranch("");
       updateData(``);
+      setRanking({ college: true, class: false, year: false });
     } else {
       setUrlExt(`&branch=${e.target.value}`);
       setBranch(e.target.value);
@@ -51,28 +72,32 @@ const Home = () => {
       });
       setYears(x[0].batches);
       setYearLoadind(true);
-      console.log(x[0].batches);
+      setRanking({ college: true, class: false, year: false });
     }
   };
   const handleYearChange = (e) => {
     if (e.target.value === "") {
       updateData(`&branch=${branch}`);
+      setRanking({ college: true, class: false, year: false });
     } else {
       updateData(`&branch=${branch}&roll=${e.target.value}%`);
+      setRanking({ college: false, class: true, year: false });
     }
   };
   const handleSearch = (e) => {
-    console.log(e.target.value.trim());
-    console.log(
-      studentData.filter((obj) => {
+    setFilteredStudentData(
+      JSON.parse(localStorage.getItem("stData")).filter((obj) => {
         return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
       })
     );
   };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
   return (
     <div className="home">
       <header>
-        <form>
+        <form onSubmit={handleSubmit}>
           <input type="text" placeholder="Search" onChange={handleSearch} />
           <button>Search</button>
         </form>
@@ -91,7 +116,7 @@ const Home = () => {
           <option value="ENG_PHYSICS">Eng. Physics</option>
           <option value="MAC">MAC</option>
         </select>
-        {branch == "" ? (
+        {branch === "" ? (
           false
         ) : (
           <select onChange={handleYearChange}>
@@ -104,13 +129,11 @@ const Home = () => {
           </select>
         )}
       </header>
-      <InfiniteScroll dataLength={studentData.length} next={fetchMoreData} hasMore={pagination !== ""}>
+      <InfiniteScroll dataLength={filteredStudentData.length} next={fetchMoreData} hasMore={pagination !== ""}>
         <div className="cards">
-          {studentData
-            .sort((a, b) => a.rank.college.cgpi - b.rank.college.cgpi)
-            .map((student, i) => {
-              return <Card student={student} key={student.roll} count={i + 1} />;
-            })}
+          {filteredStudentData.map((student, i) => {
+            return <Card student={student} key={student.roll} count={i + 1} rank={ranking} />;
+          })}
         </div>
       </InfiniteScroll>
     </div>
