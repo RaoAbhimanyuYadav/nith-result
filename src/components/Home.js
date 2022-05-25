@@ -2,9 +2,21 @@ import React, { useEffect, useState } from "react";
 import { NITH_BASE_API_URL, NITH_LAST_UPDATED_API } from "../const";
 import Card from "../components/Card";
 import "./home.css";
-import InfiniteScroll from "react-infinite-scroll-component";
+import Spinner from "./Spinner";
 
 const Home = () => {
+  const [studentData, setStudentData] = useState([]);
+  const [filteredStudentData, setFilteredStudentData] = useState([]);
+  const [branchList, setBranchList] = useState([]);
+  const [years, setYears] = useState("");
+  const [branch, setBranch] = useState("");
+  const [year, setYear] = useState("");
+  const [isBranchSelected, setISBranchSelected] = useState(false);
+  const [isYearSelected, setIsYearSelected] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
   let p = "";
   let _data = [];
   const fetchAllData = async () => {
@@ -15,92 +27,140 @@ const Home = () => {
 
       _data = _data.concat(parsedData.data);
       p = parsedData.pagination.next_cursor;
-    } while (p != "");
+    } while (p !== "");
     localStorage.setItem("stData", JSON.stringify(_data));
+    setStudentData(_data);
+    setFilteredStudentData(_data);
+    setIsLoading(false);
   };
 
-  const [studentData, setStudentData] = useState([]);
-  const [filteredStudentData, setFilteredStudentData] = useState(studentData);
-  const [pagination, setPagination] = useState("");
-  const [branch, setBranch] = useState("");
-  const [urlExt, setUrlExt] = useState("");
-  const [branchList, setBranchList] = useState([]);
-  const [years, setYears] = useState([]);
-  const [yearLoadind, setYearLoadind] = useState(false);
-  const [ranking, setRanking] = useState({ college: true, class: false, year: false });
   const fetchBranches = async () => {
     const url = NITH_BASE_API_URL + "branches";
     let data = await fetch(url);
     let parsedData = await data.json();
     setBranchList(parsedData);
   };
-  const updateData = async (url1) => {
-    const url = NITH_BASE_API_URL + `student?limit=300&sort_by_cgpi=true${url1}`;
-    let data = await fetch(url);
-    let parsedData = await data.json();
-    let dataObject = parsedData;
-    setStudentData(dataObject.data);
-    setPagination(dataObject.pagination.next_cursor);
-    setFilteredStudentData(dataObject.data);
-  };
+
   useEffect(() => {
-    fetchBranches();
-    updateData("");
     fetchAllData();
-    // eslint-disable-next-line
+    fetchBranches(); // eslint-disable-next-line
   }, []);
-  const fetchMoreData = async () => {
-    const url = NITH_BASE_API_URL + `student?limit=300&sort_by_cgpi=true${urlExt}&next_cursor=${pagination}`;
-    let data = await fetch(url);
-    let parsedData = await data.json();
-    let dataObject = parsedData;
-    setStudentData(studentData.concat(parsedData.data));
-    setPagination(dataObject.pagination.next_cursor);
-  };
+
   const handleChangeBranch = (e) => {
+    setIsFilterLoading(true);
+
     if (e.target.value === "") {
-      setUrlExt(``);
+      if (isSearching) {
+        setFilteredStudentData(
+          studentData.filter((obj) => {
+            return JSON.stringify(obj).toLowerCase().includes(inputValue);
+          })
+        );
+      } else {
+        setFilteredStudentData(studentData);
+      }
       setBranch("");
-      updateData(``);
-      setRanking({ college: true, class: false, year: false });
+      setISBranchSelected(false);
     } else {
-      setUrlExt(`&branch=${e.target.value}`);
+      setISBranchSelected(true);
       setBranch(e.target.value);
-      updateData(`&branch=${e.target.value}`);
+      let arr = studentData.filter((obj) => {
+        return obj.branch === e.target.value;
+      });
+      if (isYearSelected) {
+        arr = arr.filter((obj) => {
+          return obj.roll.slice(0, 2) === year;
+        });
+      }
+      if (isSearching) {
+        arr = arr.filter((obj) => {
+          return JSON.stringify(obj).toLowerCase().includes(inputValue);
+        });
+      }
+      setFilteredStudentData(arr);
       let x = branchList.filter((obj) => {
         return obj.name === e.target.value;
       });
       setYears(x[0].batches);
-      setYearLoadind(true);
-      setRanking({ college: true, class: false, year: false });
     }
+    setIsFilterLoading(false);
   };
   const handleYearChange = (e) => {
+    setIsFilterLoading(true);
     if (e.target.value === "") {
-      updateData(`&branch=${branch}`);
-      setRanking({ college: true, class: false, year: false });
+      setIsYearSelected(false);
+      let arr = studentData.filter((obj) => {
+        return obj.branch === branch;
+      });
+      if (isSearching) {
+        arr = arr.filter((obj) => {
+          return JSON.stringify(obj).toLowerCase().includes(inputValue);
+        });
+      }
+      setFilteredStudentData(arr);
+      setYear("");
     } else {
-      updateData(`&branch=${branch}&roll=${e.target.value}%`);
-      setRanking({ college: false, class: true, year: false });
+      setIsYearSelected(true);
+      setYear(e.target.value);
+      let arr = studentData.filter((obj) => obj.roll.slice(0, 2) === e.target.value && obj.branch === branch);
+      if (isSearching) {
+        arr = arr.filter((obj) => {
+          return JSON.stringify(obj).toLowerCase().includes(inputValue);
+        });
+      }
+      setFilteredStudentData(arr);
     }
+    setIsFilterLoading(false);
   };
+
   const handleSearch = (e) => {
-    setFilteredStudentData(
-      JSON.parse(localStorage.getItem("stData")).filter((obj) => {
-        return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
-      })
-    );
-  };
-  const handleSubmit = (e) => {
-    e.preventDefault();
+    setIsFilterLoading(true);
+    console.log("object", inputValue);
+    if (e.target.value.trim() === "") {
+      setIsSearching(false);
+      setInputValue("");
+      if (isBranchSelected) {
+        let arr = studentData.filter((obj) => {
+          return obj.branch === branch;
+        });
+        if (isYearSelected) {
+          arr = arr.filter((obj) => {
+            return obj.roll.slice(0, 2) === year;
+          });
+        }
+        setFilteredStudentData(arr);
+      }
+    } else {
+      setInputValue(e.target.value.trim().toLowerCase());
+      setIsSearching(true);
+      if (isBranchSelected) {
+        let arr = studentData.filter((obj) => {
+          return obj.branch === branch;
+        });
+        if (isYearSelected) {
+          arr = arr.filter((obj) => {
+            return obj.roll.slice(0, 2) === year;
+          });
+        }
+        arr = arr.filter((obj) => {
+          return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
+        });
+        setFilteredStudentData(arr);
+      } else {
+        setFilteredStudentData(
+          studentData.filter((obj) => {
+            return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
+          })
+        );
+      }
+    }
+    setIsFilterLoading(false);
   };
   return (
     <div className="home">
       <header>
-        <form onSubmit={handleSubmit}>
-          <input type="text" placeholder="Search" onChange={handleSearch} />
-          <button>Search</button>
-        </form>
+        <input type="text" placeholder="Search" value={inputValue} onChange={handleSearch} />
+
         <select onChange={handleChangeBranch}>
           <option value="">Filter by Branch</option>
           <option value="CIVIL">Civil</option>
@@ -121,21 +181,20 @@ const Home = () => {
         ) : (
           <select onChange={handleYearChange}>
             <option value="">ALL</option>
-            {yearLoadind &&
+            {isBranchSelected &&
               years?.map((arr) => {
-                console.log(arr);
                 return <option value={arr % 100}>{arr}</option>;
               })}
           </select>
         )}
       </header>
-      <InfiniteScroll dataLength={filteredStudentData.length} next={fetchMoreData} hasMore={pagination !== ""}>
-        <div className="cards">
-          {filteredStudentData.map((student, i) => {
-            return <Card student={student} key={student.roll} count={i + 1} rank={ranking} />;
-          })}
-        </div>
-      </InfiniteScroll>
+      {isLoading && <Spinner />}
+      {isFilterLoading && <Spinner />}
+      <div className="cards">
+        {filteredStudentData.map((student, i) => {
+          return <Card student={student} key={i + 1} count={i + 1} s={isSearching} />;
+        })}
+      </div>
     </div>
   );
 };
