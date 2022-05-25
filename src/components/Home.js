@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NITH_BASE_API_URL, NITH_LAST_UPDATED_API } from "../const";
+import { NITH_BASE_API_URL } from "../const";
 import Card from "../components/Card";
 import "./home.css";
 import Spinner from "./Spinner";
@@ -16,19 +16,23 @@ const Home = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isFilterLoading, setIsFilterLoading] = useState(false);
+
   let p = "";
   let _data = [];
   const fetchAllData = async () => {
-    do {
-      const url = NITH_BASE_API_URL + `student?limit=3000&sort_by_cgpi=true&next_cursor=${p}`;
-      let data = await fetch(url);
-      let parsedData = await data.json();
+    if (localStorage.getItem("stData")) {
+      _data = JSON.parse(localStorage.getItem("stData"));
+    } else {
+      do {
+        const url = NITH_BASE_API_URL + `student?limit=1000&sort_by_cgpi=true&next_cursor=${p}`;
+        let data = await fetch(url);
+        let parsedData = await data.json();
 
-      _data = _data.concat(parsedData.data);
-      p = parsedData.pagination.next_cursor;
-    } while (p !== "");
-    localStorage.setItem("stData", JSON.stringify(_data));
+        _data = _data.concat(parsedData.data);
+        p = parsedData.pagination.next_cursor;
+      } while (p !== "");
+      localStorage.setItem("stData", JSON.stringify(_data));
+    }
     setStudentData(_data);
     setFilteredStudentData(_data);
     setIsLoading(false);
@@ -46,10 +50,8 @@ const Home = () => {
     fetchBranches(); // eslint-disable-next-line
   }, []);
 
-  const handleChangeBranch = (e) => {
-    setIsFilterLoading(true);
-
-    if (e.target.value === "") {
+  useEffect(() => {
+    if (branch === "") {
       if (isSearching) {
         setFilteredStudentData(
           studentData.filter((obj) => {
@@ -63,9 +65,9 @@ const Home = () => {
       setISBranchSelected(false);
     } else {
       setISBranchSelected(true);
-      setBranch(e.target.value);
+
       let arr = studentData.filter((obj) => {
-        return obj.branch === e.target.value;
+        return obj.branch === branch;
       });
       if (isYearSelected) {
         arr = arr.filter((obj) => {
@@ -79,15 +81,14 @@ const Home = () => {
       }
       setFilteredStudentData(arr);
       let x = branchList.filter((obj) => {
-        return obj.name === e.target.value;
+        return obj.name === branch;
       });
       setYears(x[0].batches);
-    }
-    setIsFilterLoading(false);
-  };
-  const handleYearChange = (e) => {
-    setIsFilterLoading(true);
-    if (e.target.value === "") {
+    } // eslint-disable-next-line
+  }, [branch]);
+
+  useEffect(() => {
+    if (year === "") {
       setIsYearSelected(false);
       let arr = studentData.filter((obj) => {
         return obj.branch === branch;
@@ -98,27 +99,22 @@ const Home = () => {
         });
       }
       setFilteredStudentData(arr);
-      setYear("");
     } else {
       setIsYearSelected(true);
-      setYear(e.target.value);
-      let arr = studentData.filter((obj) => obj.roll.slice(0, 2) === e.target.value && obj.branch === branch);
+
+      let arr = studentData.filter((obj) => obj.roll.slice(0, 2) === year && obj.branch === branch);
       if (isSearching) {
         arr = arr.filter((obj) => {
           return JSON.stringify(obj).toLowerCase().includes(inputValue);
         });
       }
       setFilteredStudentData(arr);
-    }
-    setIsFilterLoading(false);
-  };
+    } // eslint-disable-next-line
+  }, [year]);
 
-  const handleSearch = (e) => {
-    setIsFilterLoading(true);
-    console.log("object", inputValue);
-    if (e.target.value.trim() === "") {
+  useEffect(() => {
+    if (inputValue === "") {
       setIsSearching(false);
-      setInputValue("");
       if (isBranchSelected) {
         let arr = studentData.filter((obj) => {
           return obj.branch === branch;
@@ -131,7 +127,6 @@ const Home = () => {
         setFilteredStudentData(arr);
       }
     } else {
-      setInputValue(e.target.value.trim().toLowerCase());
       setIsSearching(true);
       if (isBranchSelected) {
         let arr = studentData.filter((obj) => {
@@ -143,25 +138,35 @@ const Home = () => {
           });
         }
         arr = arr.filter((obj) => {
-          return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
+          return JSON.stringify(obj).toLowerCase().includes(inputValue);
         });
         setFilteredStudentData(arr);
       } else {
         setFilteredStudentData(
           studentData.filter((obj) => {
-            return JSON.stringify(obj).toLowerCase().includes(e.target.value.trim().toLowerCase());
+            return JSON.stringify(obj).toLowerCase().includes(inputValue);
           })
         );
       }
-    }
-    setIsFilterLoading(false);
-  };
+    } // eslint-disable-next-line
+  }, [inputValue]);
   return (
     <div className="home">
       <header>
-        <input type="text" placeholder="Search" value={inputValue} onChange={handleSearch} />
+        <input
+          type="text"
+          placeholder="Search"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value.toLowerCase());
+          }}
+        />
 
-        <select onChange={handleChangeBranch}>
+        <select
+          onChange={(e) => {
+            setBranch(e.target.value);
+          }}
+        >
           <option value="">Filter by Branch</option>
           <option value="CIVIL">Civil</option>
           <option value="ELECTRICAL">Electrical</option>
@@ -179,7 +184,11 @@ const Home = () => {
         {branch === "" ? (
           false
         ) : (
-          <select onChange={handleYearChange}>
+          <select
+            onChange={(e) => {
+              setYear(e.target.value);
+            }}
+          >
             <option value="">ALL</option>
             {isBranchSelected &&
               years?.map((arr) => {
@@ -189,7 +198,6 @@ const Home = () => {
         )}
       </header>
       {isLoading && <Spinner />}
-      {isFilterLoading && <Spinner />}
       <div className="cards">
         {filteredStudentData.map((student, i) => {
           return <Card student={student} key={i + 1} count={i + 1} s={isSearching} />;
